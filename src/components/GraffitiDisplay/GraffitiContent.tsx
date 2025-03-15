@@ -466,9 +466,96 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
       img.onload = () => {
         // Create a canvas with 3x dimensions for higher resolution
         const canvas = document.createElement('canvas');
-        const scaleFactor = 3; // 3x the original size
-        canvas.width = width * scaleFactor;
-        canvas.height = height * scaleFactor;
+        const highResFactor = 3; // 3x the original size for high resolution
+        
+        let canvasWidth, canvasHeight, drawX, drawY, drawWidth, drawHeight;
+        
+        if (!backgroundEnabled) {
+          // If background is transparent, we'll crop the canvas to the content with a fixed 5px margin
+          
+          // Create a temporary canvas to analyze the image content
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = width;
+          tempCanvas.height = height;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          if (!tempCtx) {
+            console.error('Could not get temporary canvas context');
+            setIsExporting(false);
+            return;
+          }
+          
+          // Draw the image on the temporary canvas
+          tempCtx.drawImage(img, 0, 0, width, height);
+          
+          // Get the image data to analyze non-transparent pixels
+          const imageData = tempCtx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+          
+          // Find the bounds of non-transparent pixels
+          let minX = width;
+          let minY = height;
+          let maxX = 0;
+          let maxY = 0;
+          
+          // Scan the image data to find the bounding box of non-transparent pixels
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const alpha = data[(y * width + x) * 4 + 3]; // Alpha channel
+              if (alpha > 0) { // Non-transparent pixel
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+              }
+            }
+          }
+          
+          // If we found non-transparent pixels
+          if (minX < maxX && minY < maxY) {
+            // Calculate the content width and height independently
+            const contentBoxWidth = maxX - minX;
+            const contentBoxHeight = maxY - minY;
+            
+            // Use a fixed 5px margin on all sides
+            const marginX = 5;
+            const marginY = 5;
+            
+            // Calculate the final dimensions with margin
+            const finalWidth = contentBoxWidth + (marginX * 2);
+            const finalHeight = contentBoxHeight + (marginY * 2);
+            
+            // Set the canvas dimensions with high resolution factor
+            canvasWidth = finalWidth * highResFactor;
+            canvasHeight = finalHeight * highResFactor;
+            
+            // Calculate drawing parameters
+            drawX = -minX + marginX;
+            drawY = -minY + marginY;
+            drawWidth = width;
+            drawHeight = height;
+          } else {
+            // Fallback if no non-transparent pixels found
+            canvasWidth = width * highResFactor;
+            canvasHeight = height * highResFactor;
+            drawX = 0;
+            drawY = 0;
+            drawWidth = width;
+            drawHeight = height;
+          }
+        } else {
+          // If background is enabled, use the full dimensions
+          canvasWidth = width * highResFactor;
+          canvasHeight = height * highResFactor;
+          drawX = 0;
+          drawY = 0;
+          drawWidth = width;
+          drawHeight = height;
+        }
+        
+        // Set the canvas dimensions
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         
         // Get the canvas context and draw the image
         const ctx = canvas.getContext('2d');
@@ -482,8 +569,13 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         
-        // Draw the image on the canvas at 3x scale
-        ctx.drawImage(img, 0, 0, width * scaleFactor, height * scaleFactor);
+        // Draw the image on the canvas with the calculated parameters
+        ctx.drawImage(
+          img, 
+          0, 0, width, height, // Source rectangle
+          drawX * highResFactor, drawY * highResFactor, // Destination position
+          drawWidth * highResFactor, drawHeight * highResFactor // Destination size
+        );
         
         // Convert the canvas to a PNG blob
         canvas.toBlob((pngBlob) => {
@@ -528,7 +620,7 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
           URL.revokeObjectURL(pngUrl);
           URL.revokeObjectURL(svgUrl);
           
-          console.log(`PNG saved successfully as ${filename} (3x resolution)`);
+          console.log(`PNG saved successfully as ${filename}`);
           setIsExporting(false);
         }, 'image/png');
       };
@@ -666,9 +758,96 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
       img.onload = () => {
         // Create a canvas with 3x dimensions for higher resolution
         const canvas = document.createElement('canvas');
-        const scaleFactor = 3; // 3x the original size
-        canvas.width = width * scaleFactor;
-        canvas.height = height * scaleFactor;
+        const highResFactor = 3; // 3x the original size for high resolution
+        
+        let canvasWidth, canvasHeight, drawX, drawY, drawWidth, drawHeight;
+        
+        if (!backgroundEnabled) {
+          // If background is transparent, we'll crop the canvas to the content with a fixed 5px margin
+          
+          // Create a temporary canvas to analyze the image content
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = width;
+          tempCanvas.height = height;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          if (!tempCtx) {
+            console.error('Could not get temporary canvas context');
+            setIsExporting(false);
+            return;
+          }
+          
+          // Draw the image on the temporary canvas
+          tempCtx.drawImage(img, 0, 0, width, height);
+          
+          // Get the image data to analyze non-transparent pixels
+          const imageData = tempCtx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+          
+          // Find the bounds of non-transparent pixels
+          let minX = width;
+          let minY = height;
+          let maxX = 0;
+          let maxY = 0;
+          
+          // Scan the image data to find the bounding box of non-transparent pixels
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const alpha = data[(y * width + x) * 4 + 3]; // Alpha channel
+              if (alpha > 0) { // Non-transparent pixel
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+              }
+            }
+          }
+          
+          // If we found non-transparent pixels
+          if (minX < maxX && minY < maxY) {
+            // Calculate the content width and height independently
+            const contentBoxWidth = maxX - minX;
+            const contentBoxHeight = maxY - minY;
+            
+            // Use a fixed 5px margin on all sides
+            const marginX = 5;
+            const marginY = 5;
+            
+            // Calculate the final dimensions with margin
+            const finalWidth = contentBoxWidth + (marginX * 2);
+            const finalHeight = contentBoxHeight + (marginY * 2);
+            
+            // Set the canvas dimensions with high resolution factor
+            canvasWidth = finalWidth * highResFactor;
+            canvasHeight = finalHeight * highResFactor;
+            
+            // Calculate drawing parameters
+            drawX = -minX + marginX;
+            drawY = -minY + marginY;
+            drawWidth = width;
+            drawHeight = height;
+          } else {
+            // Fallback if no non-transparent pixels found
+            canvasWidth = width * highResFactor;
+            canvasHeight = height * highResFactor;
+            drawX = 0;
+            drawY = 0;
+            drawWidth = width;
+            drawHeight = height;
+          }
+        } else {
+          // If background is enabled, use the full dimensions
+          canvasWidth = width * highResFactor;
+          canvasHeight = height * highResFactor;
+          drawX = 0;
+          drawY = 0;
+          drawWidth = width;
+          drawHeight = height;
+        }
+        
+        // Set the canvas dimensions
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         
         // Get the canvas context and draw the image
         const ctx = canvas.getContext('2d');
@@ -682,8 +861,13 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         
-        // Draw the image on the canvas at 3x scale
-        ctx.drawImage(img, 0, 0, width * scaleFactor, height * scaleFactor);
+        // Draw the image on the canvas with the calculated parameters
+        ctx.drawImage(
+          img, 
+          0, 0, width, height, // Source rectangle
+          drawX * highResFactor, drawY * highResFactor, // Destination position
+          drawWidth * highResFactor, drawHeight * highResFactor // Destination size
+        );
         
         // Check if we're on a mobile device
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -706,11 +890,11 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
               
               // Write to clipboard
               await navigator.clipboard.write([clipboardItem]);
-              console.log('High-resolution image (3x) copied to clipboard');
+              console.log(`Image copied to clipboard!`);
               
               // Show a temporary success message
               const successMessage = document.createElement('div');
-              successMessage.textContent = 'Copied to clipboard! (3x resolution)';
+              successMessage.textContent = `Copied to clipboard!`;
               successMessage.style.position = 'absolute';
               successMessage.style.top = '50px';
               successMessage.style.left = '50%';
@@ -916,7 +1100,7 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
           disabled={isExporting}
           className="bg-indigo-600 hover:bg-indigo-700 text-white p-1 rounded-md shadow-md transition-colors duration-200 flex items-center justify-center"
           title="Copy to Clipboard (3x Resolution)"
-          style={{ width: '36px', height: '36px' }}
+          style={{ width: '32px', height: '32px' }}
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
