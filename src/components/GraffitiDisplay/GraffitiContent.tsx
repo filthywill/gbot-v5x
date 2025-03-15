@@ -464,9 +464,9 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
       // Create an Image object to load the SVG
       const img = new Image();
       img.onload = () => {
-        // Create a canvas with 3x dimensions for higher resolution
+        // Create a canvas with 1.5x dimensions for moderate resolution (reduced from 3x)
         const canvas = document.createElement('canvas');
-        const highResFactor = 3; // 3x the original size for high resolution
+        const highResFactor = 1.5; // 1.5x the original size for moderate resolution
         
         let canvasWidth, canvasHeight, drawX, drawY, drawWidth, drawHeight;
         
@@ -578,6 +578,9 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
         );
         
         // Convert the canvas to a PNG blob
+        // Note: Canvas toBlob uses PNG24 by default. We can't directly specify PNG8 with the standard API.
+        // We're using the quality parameter (0.8) which affects JPEG but not PNG.
+        // For PNG8, we would need a separate library like pngquant.js
         canvas.toBlob((pngBlob) => {
           if (!pngBlob) {
             console.error('Could not create PNG blob');
@@ -622,7 +625,7 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
           
           console.log(`PNG saved successfully as ${filename}`);
           setIsExporting(false);
-        }, 'image/png');
+        }, 'image/png', 0.8); // Quality parameter (0.8) affects JPEG but not PNG
       };
       
       img.onerror = (error) => {
@@ -756,9 +759,9 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
       // Create an Image object to load the SVG
       const img = new Image();
       img.onload = () => {
-        // Create a canvas with 3x dimensions for higher resolution
+        // Create a canvas with 1.5x dimensions for moderate resolution (reduced from 3x)
         const canvas = document.createElement('canvas');
-        const highResFactor = 3; // 3x the original size for high resolution
+        const highResFactor = 1.5; // 1.5x the original size for moderate resolution
         
         let canvasWidth, canvasHeight, drawX, drawY, drawWidth, drawHeight;
         
@@ -873,6 +876,7 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         
         // Convert the canvas to a PNG blob
+        // Note: Canvas toBlob uses PNG24 by default. We can't directly specify PNG8 with the standard API.
         canvas.toBlob(async (pngBlob) => {
           if (!pngBlob) {
             console.error('Could not create PNG blob');
@@ -924,7 +928,7 @@ const GraffitiContent: React.FC<GraffitiContentProps> = ({
           // Clean up
           URL.revokeObjectURL(svgUrl);
           setIsExporting(false);
-        }, 'image/png');
+        }, 'image/png', 0.8); // Quality parameter (0.8) affects JPEG but not PNG
       };
       
       img.onerror = (error) => {
